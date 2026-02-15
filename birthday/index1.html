@@ -24,7 +24,7 @@
         color: #555;
       }
       
-      /* New CSS for the soft pink button hover effect */
+      /* CSS for the soft pink button hover effect */
       .photobooth-btn:hover {
         transform: scale(1.05);
         background-color: #ffb6c1 !important;
@@ -40,7 +40,7 @@
         <div class="cake" id="cake"></div>
       </div>
       
-      <a href="photobooth.html" id="photoboothBtn" style="display: none; text-decoration: none; margin-top: 40px; z-index: 10;">
+      <a href="photobooth.html" id="photoboothBtn" style="text-decoration: none; margin-top: 40px; z-index: 10;">
         <button class="photobooth-btn" style="padding: 15px 25px; font-size: 1.5rem; cursor: pointer; border-radius: 15px; border: 2px solid #ffb6c1; background-color: #ffe4e8; color: #cc4466; font-family: 'Pixelify Sans', sans-serif; transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(255, 182, 193, 0.5);">
             Thổi nến xong thì chụp choẹt nhá 📸
         </button>
@@ -72,7 +72,6 @@
       ];
       const CAKE_VISUAL_WIDTH = 35;
       
-      // MOVED: the blown variable is now globally available
       let blown = false;
 
       function createCandles(count) {
@@ -176,21 +175,16 @@
           }, delay);
         });
 
-        // Update subTitle and SHOW BUTTON after short delay
+        // Update subTitle after short delay
         setTimeout(() => {
           const subTitle = document.getElementById("subTitle");
           subTitle.textContent = `Yayy! Wishing you the happiest birthday ever!! 🎉`;
-          
-          // Reveal the photobooth button
-          const photoboothBtn = document.getElementById("photoboothBtn");
-          photoboothBtn.style.display = "block";
-          
         }, 1200);
       }
 
       startMicDetection();
 
-      // ADDED: 15 Second Fallback Timer
+      // 15 Second Fallback Timer
       setTimeout(() => {
         // Only run if the candles haven't been blown yet
         if (!blown) {
