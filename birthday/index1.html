@@ -71,6 +71,9 @@
         "yellow-candle",
       ];
       const CAKE_VISUAL_WIDTH = 35;
+      
+      // MOVED: the blown variable is now globally available
+      let blown = false;
 
       function createCandles(count) {
         cake.innerHTML = "";
@@ -122,8 +125,6 @@
           source.connect(analyser);
 
           const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-          let blown = false;
 
           function detectBlow() {
             analyser.getByteFrequencyData(dataArray);
@@ -188,7 +189,16 @@
       }
 
       startMicDetection();
+
+      // ADDED: 15 Second Fallback Timer
+      setTimeout(() => {
+        // Only run if the candles haven't been blown yet
+        if (!blown) {
+          blown = true;
+          blowOutCandles();
+        }
+      }, 15000); // 15000 milliseconds = 15 seconds
+
     </script>
   </body>
-
 </html>
