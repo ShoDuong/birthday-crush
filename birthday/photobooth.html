@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Photobooth 📸</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --primary-color: #ff9999;
+            --secondary-color: #ffcccc;
+            --accent-color: #ffb6c1;
+            --dark-text: #333;
+            --booth-bg: #fff0f5;
+        }
+
+        body {
+            font-family: 'Pixelify Sans', sans-serif;
+            background-color: var(--secondary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: var(--dark-text);
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 0px var(--accent-color);
+        }
+
+        .layout-container {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        /* --- LEFT SIDE: Camera Frame --- */
+        .booth-frame {
+            background-color: var(--booth-bg);
+            padding: 25px;
+            border-radius: 20px;
+            border: 8px solid var(--primary-color);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .screen-container {
+            position: relative;
+            width: 100%;
+            padding-top: 75%; 
+            background: #000;
+            border-radius: 12px;
+            border: 4px solid var(--accent-color);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #photoCanvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); 
+        }
+
+        #webcamVideo { display: none; }
+
+        #countdownText {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%); 
+            font-size: 100px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 3px 3px 10px rgba(0,0,0,0.7);
+            display: none;
+            z-index: 10;
+        }
+
+        #flashOverlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.1s;
+            z-index: 5;
+        }
+
+        /* Controls */
+        .custom-controls {
+            width: 100%; background: white; padding: 15px; border-radius: 10px;
+            margin-bottom: 20px; display: flex; flex-direction: column;
+            align-items: center; gap: 15px; border: 2px dashed var(--primary-color);
+            box-sizing: border-box;
+        }
+
+        .sticker-selector {
+            display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+        }
+
+        .sticker-btn {
+            background: none; border: none; font-size: 1.5rem;
+            cursor: pointer; transition: transform 0.2s; padding: 5px;
+        }
+        .sticker-btn:hover { transform: scale(1.3); }
+
+        .controls {
+            display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 100%;
+        }
+
+        button {
+            font-family: 'Pixelify Sans', sans-serif; padding: 10px 15px;
+            font-size: 1.1rem; border: none; border-radius: 30px;
+            cursor: pointer; transition: all 0.2s ease; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
+        button:active { transform: scale(0.95); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .primary-btn { background-color: var(--primary-color); color: white; font-weight: bold;}
+        .primary-btn:hover:not(:disabled) { background-color: #ff7777; }
+        .secondary-btn { background-color: white; color: var(--dark-text); border: 2px solid var(--primary-color); }
+        .secondary-btn:hover:not(:disabled) { background-color: var(--booth-bg); }
+
+        /* --- RIGHT SIDE: Live Interactive Canvas Strip --- */
+        .strip-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #stripCanvas {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 280px; /* Scales the canvas down for the screen */
+            height: auto;
+            cursor: grab;
+        }
+        #stripCanvas:active {
+            cursor: grabbing;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>✨ Birthday Photobooth ✨</h1>
+
+    <div class="layout-container">
+        
+        <div class="booth-frame">
+            <div class="screen-container">
+                <video id="webcamVideo" autoplay playsinline></video>
+                <canvas id="photoCanvas"></canvas>
+                <div id="flashOverlay"></div>
+                <div id="countdownText">3</div>
+            </div>
+
+            <div class="custom-controls">
+                <div>
+                    <label style="font-weight: bold;">Strip Color: </label>
+                    <input type="color" id="stripColorPicker" value="#ffcccc">
+                </div>
+                <div class="sticker-selector">
+                    <span style="font-weight: bold; margin-top: 5px;">Add Stickers (Drag to move!): </span>
+                    <button class="sticker-btn" data-sticker="❤️">❤️</button>
+                    <button class="sticker-btn" data-sticker="⭐">⭐</button>
+                    <button class="sticker-btn" data-sticker="🎂">🎂</button>
+                    <button class="sticker-btn" data-sticker="✨">✨</button>
+                    <button class="sticker-btn" data-sticker="🎀">🎀</button>
+                    <button id="clearStickersBtn" class="secondary-btn" style="padding: 5px 10px; font-size: 0.8rem;">Clear Stickers</button>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="captureLiveBtn" class="primary-btn">📸 Start Live Camera</button>
+                <button id="uploadTriggerBtn" class="secondary-btn">📁 Upload Photo</button>
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                
+                <button id="clearStripBtn" class="secondary-btn" disabled>🗑️ Reset Strip</button>
+                <button id="downloadBtn" class="primary-btn" disabled style="width: 100%;">💾 Download Strip</button>
+            </div>
+            
+            <p style="text-align: center; color: var(--dark-text); margin-top: 15px;">
+                You can mix live photos and uploaded photos!<br>Add up to 5 pictures.
+            </p>
+        </div>
+
+        <div class="strip-wrapper">
+            <h2 style="margin:0; color: var(--dark-text); background: white; padding: 5px 15px; border-radius: 10px; border: 2px solid var(--primary-color);">Your Strip</h2>
+            <canvas id="stripCanvas"></canvas>
+        </div>
+
+    </div>
+
+    <script>
+        // --- WebCam Elements ---
+        const video = document.getElementById('webcamVideo');
+        const canvas = document.getElementById('photoCanvas');
+        const ctx = canvas.getContext('2d');
+        const countdownText = document.getElementById('countdownText');
+        const flashOverlay = document.getElementById('flashOverlay');
+        
+        // --- Interactive Strip Elements & State ---
+        const stripCanvas = document.getElementById('stripCanvas');
+        const sCtx = stripCanvas.getContext('2d');
+        
+        const STRIP_W = 680, PHOTO_W = 640, PHOTO_H = 480, PADDING = 20;
+        const STRIP_H = (PHOTO_H * 5) + (PADDING * 6) + 120;
+        
+        stripCanvas.width = STRIP_W;
+        stripCanvas.height = STRIP_H;
+
+        let capturedPhotos = []; // Holds Image objects
+        let currentStripColor = '#ffcccc';
+        
+        // Sticker Logic State (Adapted from your logic!)
+        let stickers = [], dragOffset = { x: 0, y: 0 }, selectedSticker = null;
+
+        // --- Buttons ---
+        const captureLiveBtn = document.getElementById('captureLiveBtn');
+        const uploadTriggerBtn = document.getElementById('uploadTriggerBtn');
+        const fileInput = document.getElementById('fileInput');
+        const clearStripBtn = document.getElementById('clearStripBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const colorPicker = document.getElementById('stripColorPicker');
+
+        let isStreaming = false;
+        let animationId = null;
+
+        // 1. SETUP CAMERA
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    isStreaming = true;
+                    drawVideoFrame();
+                };
+            } catch (err) {
+                console.error("Camera error:", err);
+            }
+            drawStripCanvas(); // Draw initial empty strip
+        }
+
+        function drawVideoFrame() {
+            if (isStreaming) {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                animationId = requestAnimationFrame(drawVideoFrame);
+            }
+        }
+
+        // 2. THE MASTER DRAW FUNCTION FOR THE STRIP
+        function drawStripCanvas() {
+            sCtx.clearRect(0, 0, STRIP_W, STRIP_H);
+
+            // Draw Background Color
+            sCtx.fillStyle = currentStripColor;
+            sCtx.fillRect(0, 0, STRIP_W, STRIP_H);
+
+            // Draw the 5 Photo Slots
+            for(let i=0; i<5; i++) {
+                const x = PADDING;
+                const y = PADDING + (i * (PHOTO_H + PADDING));
+                
+                if (capturedPhotos[i]) {
+                    // Draw the captured image
+                    sCtx.drawImage(capturedPhotos[i], x, y, PHOTO_W, PHOTO_H);
+                } else {
+                    // Draw an empty placeholder box
+                    sCtx.fillStyle = "rgba(0,0,0,0.1)";
+                    sCtx.fillRect(x, y, PHOTO_W, PHOTO_H);
+                    sCtx.fillStyle = "#888";
+                    sCtx.font = "40px 'Pixelify Sans', sans-serif";
+                    sCtx.textAlign = "center";
+                    sCtx.textBaseline = "middle";
+                    sCtx.fillText(`Photo ${i+1}`, x + PHOTO_W/2, y + PHOTO_H/2);
+                }
+
+                // Draw Border around photo/placeholder
+                sCtx.strokeStyle = '#333';
+                sCtx.lineWidth = 6;
+                sCtx.strokeRect(x, y, PHOTO_W, PHOTO_H);
+            }
+
+            // Draw Happy Birthday Text at bottom
+            sCtx.fillStyle = '#333';
+            sCtx.font = "bold 60px 'Pixelify Sans', sans-serif";
+            sCtx.textAlign = "center";
+            sCtx.textBaseline = "alphabetic";
+            sCtx.fillText("Happy Birthday!", STRIP_W / 2, STRIP_H - 40);
+
+            // Draw Stickers
+            sCtx.textAlign = "left"; 
+            sCtx.textBaseline = "top"; // Top-alignment perfectly matches the bounding box math
+            sCtx.font = "80px Arial"; // Sticker size
+            
+            stickers.forEach(s => {
+                sCtx.fillText(s.emoji, s.x, s.y);
+            });
+        }
+
+        // 3. STICKER DRAG & DROP LOGIC
+        function getPointerPos(e) {
+            const rect = stripCanvas.getBoundingClientRect();
+            const scaleX = stripCanvas.width / rect.width;
+            const scaleY = stripCanvas.height / rect.height;
+            const clientX = e.touches?.[0]?.clientX ?? e.clientX;
+            const clientY = e.touches?.[0]?.clientY ?? e.clientY;
+            return { 
+                x: (clientX - rect.left) * scaleX, 
+                y: (clientY - rect.top) * scaleY 
+            };
+        }
+
+        function pointerDown(e) {
+            const { x: mouseX, y: mouseY } = getPointerPos(e);
+            // Loop backwards to grab the top-most sticker first
+            for (let i = stickers.length - 1; i >= 0; i--) {
+                const s = stickers[i];
+                if (mouseX >= s.x && mouseX <= s.x + s.width && mouseY >= s.y && mouseY <= s.y + s.height) {
+                    selectedSticker = s;
+                    s.dragging = true;
+                    dragOffset.x = mouseX - s.x;
+                    dragOffset.y = mouseY - s.y;
+                    
+                    // Move to end of array to draw on top
+                    stickers.splice(i, 1);
+                    stickers.push(s);
+                    
+                    drawStripCanvas();
+                    e.preventDefault();
+                    break;
+                }
+            }
+        }
+
+        function pointerMove(e) {
+            if (!selectedSticker?.dragging) return;
+            const { x: mouseX, y: mouseY } = getPointerPos(e);
+            selectedSticker.x = mouseX - dragOffset.x;
+            selectedSticker.y = mouseY - dragOffset.y;
+            drawStripCanvas();
+            e.preventDefault();
+        }
+
+        function pointerUp() { 
+            if (selectedSticker) selectedSticker.dragging = false; 
+            selectedSticker = null; 
+        }
+
+        // Mouse Events
+        stripCanvas.addEventListener('mousedown', pointerDown);
+        stripCanvas.addEventListener('mousemove', pointerMove);
+        stripCanvas.addEventListener('mouseup', pointerUp);
+        stripCanvas.addEventListener('mouseleave', pointerUp);
+
+        // Touch Events
+        stripCanvas.addEventListener('touchstart', pointerDown, {passive: false});
+        stripCanvas.addEventListener('touchmove', pointerMove, {passive: false});
+        stripCanvas.addEventListener('touchend', pointerUp);
+        stripCanvas.addEventListener('touchcancel', pointerUp);
+
+        // Add Sticker Buttons
+        document.querySelectorAll('.sticker-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const emoji = btn.getAttribute('data-sticker');
+                
+                // Add sticker near the middle of the currently visible canvas
+                stickers.push({
+                    emoji: emoji,
+                    x: Math.random() * 200 + 100,
+                    y: Math.random() * 500 + 100,
+                    width: 80, // Approximate width of 80px font emoji
+                    height: 80, // Approximate height
+                    dragging: false
+                });
+                drawStripCanvas();
+            });
+        });
+
+        document.getElementById('clearStickersBtn').addEventListener('click', () => {
+            stickers = [];
+            drawStripCanvas();
+        });
+
+        colorPicker.addEventListener('input', (e) => {
+            currentStripColor = e.target.value;
+            drawStripCanvas();
+        });
+
+
+        // 4. PHOTO CAPTURE LOGIC
+        function addPhotoToStrip(dataURL) {
+            if (capturedPhotos.length >= 5) {
+                alert("Strip full!"); return;
+            }
+            
+            const img = new Image();
+            img.onload = () => {
+                capturedPhotos.push(img);
+                drawStripCanvas();
+                
+                clearStripBtn.disabled = false;
+                downloadBtn.disabled = false;
+                if (capturedPhotos.length >= 5) {
+                    captureLiveBtn.disabled = true; uploadTriggerBtn.disabled = true;
+                    captureLiveBtn.textContent = "Strip is Full!";
+                }
+            };
+            img.src = dataURL;
+        }
+
+        function triggerFlash() {
+            flashOverlay.style.opacity = '1';
+            setTimeout(() => flashOverlay.style.opacity = '0', 100);
+        }
+
+        captureLiveBtn.addEventListener('click', () => {
+            if (capturedPhotos.length >= 5) return;
+            captureLiveBtn.disabled = true; uploadTriggerBtn.disabled = true;
+            
+            let count = 3;
+            countdownText.style.display = 'block'; countdownText.textContent = count;
+            
+            const timer = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownText.textContent = count;
+                } else {
+                    clearInterval(timer);
+                    countdownText.style.display = 'none';
+                    triggerFlash();
+                    
+                    const hiddenCanvas = document.createElement('canvas');
+                    hiddenCanvas.width = canvas.width; hiddenCanvas.height = canvas.height;
+                    const hCtx = hiddenCanvas.getContext('2d');
+                    hCtx.translate(hiddenCanvas.width, 0); hCtx.scale(-1, 1);
+                    hCtx.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+                    
+                    addPhotoToStrip(hiddenCanvas.toDataURL('image/png'));
+
+                    if (capturedPhotos.length < 5) {
+                        captureLiveBtn.disabled = false; uploadTriggerBtn.disabled = false;
+                    }
+                }
+            }, 1000);
+        });
+
+        uploadTriggerBtn.addEventListener('click', () => {
+            if (capturedPhotos.length < 5) fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = PHOTO_W; tempCanvas.height = PHOTO_H;
+                        const tCtx = tempCanvas.getContext('2d');
+                        tCtx.fillStyle = '#ffffff'; tCtx.fillRect(0, 0, PHOTO_W, PHOTO_H);
+                        
+                        const imgAspect = img.width / img.height;
+                        const targetAspect = PHOTO_W / PHOTO_H;
+                        let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
+                        
+                        if (imgAspect > targetAspect) {
+                            drawHeight = PHOTO_H;
+                            drawWidth = img.width * (PHOTO_H / img.height);
+                            offsetX = (PHOTO_W - drawWidth) / 2;
+                        } else {
+                            drawWidth = PHOTO_W;
+                            drawHeight = img.height * (PHOTO_W / img.width);
+                            offsetY = (PHOTO_H - drawHeight) / 2;
+                        }
+                        
+                        tCtx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+                        addPhotoToStrip(tempCanvas.toDataURL('image/png'));
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            e.target.value = ''; 
+        });
+
+        // 5. RESET & DOWNLOAD
+        clearStripBtn.addEventListener('click', () => {
+            capturedPhotos = []; stickers = [];
+            drawStripCanvas();
+            clearStripBtn.disabled = true; downloadBtn.disabled = true;
+            captureLiveBtn.disabled = false; uploadTriggerBtn.disabled = false;
+            captureLiveBtn.textContent = "📸 Start Live Camera";
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (capturedPhotos.length === 0) return;
+            const link = document.createElement('a');
+            link.download = 'birthday-strip.png';
+            link.href = stripCanvas.toDataURL('image/png'); // Super easy download now!
+            link.click();
+        });
+
+        setupCamera();
+
+    </script>
+</body>
+</html>
