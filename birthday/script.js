@@ -20,11 +20,13 @@ envelope.addEventListener("click", () => {
     },50);
 });
 
-// Logic to move the NO btn
+// Logic to move the NO btn (Now works for Mouse AND Mobile Touch)
 
-noBtn.addEventListener("mouseover", () => {
-    const min = 200;
-    const max = 200;
+function moveNoButton() {
+    // If on a phone, jump a smaller distance (50-100px). If on a computer, jump further (200px)
+    const isMobile = window.innerWidth <= 600;
+    const min = isMobile ? 50 : 200;
+    const max = isMobile ? 100 : 200;
 
     const distance = Math.random() * (max - min) + min;
     const angle = Math.random() * Math.PI * 2;
@@ -34,6 +36,15 @@ noBtn.addEventListener("mouseover", () => {
 
     noBtn.style.transition = "transform 0.3s ease";
     noBtn.style.transform = `translate(${moveX}px, ${moveY}px)`;
+}
+
+// 1. Triggers when a computer mouse hovers over it
+noBtn.addEventListener("mouseover", moveNoButton);
+
+// 2. Triggers when a finger touches it on a phone screen
+noBtn.addEventListener("touchstart", (e) => {
+    e.preventDefault(); // Stops the phone from accidentally "clicking" the button before it moves
+    moveNoButton();
 });
 
 // Logic to make YES btn to grow

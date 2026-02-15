@@ -26,47 +26,49 @@
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
+            overflow-x: hidden;
         }
 
         h1 {
             color: var(--dark-text);
             margin-bottom: 20px;
             text-shadow: 2px 2px 0px var(--accent-color);
+            text-align: center;
         }
 
-        .layout-container {
-            display: flex;
-            gap: 30px;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            justify-content: center;
-            max-width: 1100px;
-            width: 100%;
-        }
-
-        /* --- LEFT SIDE: Camera Frame --- */
+        /* --- THE BOOTH FRAME (Now a Side-by-Side Grid) --- */
         .booth-frame {
             background-color: var(--booth-bg);
             padding: 25px;
             border-radius: 20px;
             border: 8px solid var(--primary-color);
             box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            
+            display: flex;
+            flex-direction: row;
+            gap: 25px;
+            width: 100%;
+            max-width: 950px;
+            box-sizing: border-box;
+        }
+
+        /* --- LEFT COLUMN: Camera & Buttons --- */
+        .left-column {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 500px;
+            gap: 15px;
+            min-width: 0; /* Prevents layout from breaking on small screens */
         }
 
         .screen-container {
             position: relative;
             width: 100%;
-            padding-top: 75%; 
+            padding-top: 75%; /* 4:3 Aspect Ratio */
             background: #000;
             border-radius: 12px;
             border: 4px solid var(--accent-color);
             overflow: hidden;
-            margin-bottom: 20px;
         }
 
         #photoCanvas {
@@ -103,13 +105,13 @@
         /* Controls */
         .custom-controls {
             width: 100%; background: white; padding: 15px; border-radius: 10px;
-            margin-bottom: 20px; display: flex; flex-direction: column;
-            align-items: center; gap: 15px; border: 2px dashed var(--primary-color);
+            display: flex; flex-direction: column;
+            align-items: center; gap: 10px; border: 2px dashed var(--primary-color);
             box-sizing: border-box;
         }
 
         .sticker-selector {
-            display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+            display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
         }
 
         .sticker-btn {
@@ -135,12 +137,19 @@
         .secondary-btn { background-color: white; color: var(--dark-text); border: 2px solid var(--primary-color); }
         .secondary-btn:hover:not(:disabled) { background-color: var(--booth-bg); }
 
-        /* --- RIGHT SIDE: Live Interactive Canvas Strip --- */
-        .strip-wrapper {
+        /* --- RIGHT COLUMN: The Strip --- */
+        .right-column {
+            width: 250px; /* Fixed width on computers */
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .strip-title {
+            margin: 0 0 10px 0; color: var(--dark-text); background: white; 
+            padding: 5px 15px; border-radius: 10px; border: 2px solid var(--primary-color);
+            font-size: 1.2rem;
         }
 
         #stripCanvas {
@@ -148,23 +157,66 @@
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             width: 100%;
-            max-width: 280px; /* Scales the canvas down for the screen */
             height: auto;
             cursor: grab;
+            /* Prevents the entire web page from scrolling when you try to drag stickers/photos on a phone */
+            touch-action: none; 
         }
         #stripCanvas:active {
             cursor: grabbing;
         }
 
+        /* --- MOBILE RESPONSIVE DESIGN --- */
+        @media (max-width: 700px) {
+            .booth-frame {
+                padding: 12px;
+                gap: 12px;
+                border-width: 5px;
+            }
+            h1 {
+                font-size: 1.6rem;
+                margin-bottom: 10px;
+            }
+            
+            /* Keeps them side-by-side but perfectly proportioned for narrow screens */
+            .left-column {
+                width: 58%; 
+                flex: none;
+            }
+            .right-column {
+                width: 42%;
+            }
+
+            .strip-title {
+                font-size: 0.9rem;
+                padding: 3px 8px;
+            }
+            button {
+                font-size: 0.9rem;
+                padding: 8px;
+                width: 100%; /* Makes buttons full-width inside their narrow column */
+            }
+            .controls {
+                flex-direction: column; /* Stacks buttons neatly under the camera */
+            }
+            .custom-controls {
+                padding: 8px;
+            }
+            .sticker-btn {
+                font-size: 1.2rem;
+                padding: 2px;
+            }
+        }
     </style>
 </head>
 <body>
 
     <h1>✨ Birthday Photobooth ✨</h1>
 
-    <div class="layout-container">
+    <div class="booth-frame">
         
-        <div class="booth-frame">
+        <div class="left-column">
+            
             <div class="screen-container">
                 <video id="webcamVideo" autoplay playsinline></video>
                 <canvas id="photoCanvas"></canvas>
@@ -174,36 +226,35 @@
 
             <div class="custom-controls">
                 <div>
-                    <label style="font-weight: bold;">Strip Color: </label>
+                    <label style="font-weight: bold; font-size: 0.9rem;">Color: </label>
                     <input type="color" id="stripColorPicker" value="#ffcccc">
                 </div>
                 <div class="sticker-selector">
-                    <span style="font-weight: bold; margin-top: 5px;">Add Stickers (Drag to move!): </span>
                     <button class="sticker-btn" data-sticker="❤️">❤️</button>
                     <button class="sticker-btn" data-sticker="⭐">⭐</button>
                     <button class="sticker-btn" data-sticker="🎂">🎂</button>
                     <button class="sticker-btn" data-sticker="✨">✨</button>
                     <button class="sticker-btn" data-sticker="🎀">🎀</button>
-                    <button id="clearStickersBtn" class="secondary-btn" style="padding: 5px 10px; font-size: 0.8rem;">Clear Stickers</button>
+                    <button id="clearStickersBtn" class="secondary-btn" style="padding: 5px 10px; font-size: 0.8rem; margin-top: 5px;">Clear Stickers</button>
                 </div>
             </div>
 
             <div class="controls">
-                <button id="captureLiveBtn" class="primary-btn">📸 Start Live Camera</button>
+                <button id="captureLiveBtn" class="primary-btn">📸 Start Camera</button>
                 <button id="uploadTriggerBtn" class="secondary-btn">📁 Upload Photo</button>
                 <input type="file" id="fileInput" accept="image/*" style="display: none;">
                 
                 <button id="clearStripBtn" class="secondary-btn" disabled>🗑️ Reset Strip</button>
-                <button id="downloadBtn" class="primary-btn" disabled style="width: 100%;">💾 Download Strip</button>
+                <button id="downloadBtn" class="primary-btn" disabled>💾 Download</button>
             </div>
             
-            <p style="text-align: center; color: var(--dark-text); margin-top: 15px;">
-                You can mix live photos and uploaded photos!<br>Add up to 5 pictures.
+            <p style="text-align: center; color: var(--dark-text); margin-top: 5px; line-height: 1.3; font-size: 0.85rem;">
+                <strong>Drag photos on the strip to center them!</strong><br>Mix live & uploaded photos.
             </p>
         </div>
 
-        <div class="strip-wrapper">
-            <h2 style="margin:0; color: var(--dark-text); background: white; padding: 5px 15px; border-radius: 10px; border: 2px solid var(--primary-color);">Your Strip</h2>
+        <div class="right-column">
+            <h2 class="strip-title">Your Strip</h2>
             <canvas id="stripCanvas"></canvas>
         </div>
 
@@ -227,11 +278,15 @@
         stripCanvas.width = STRIP_W;
         stripCanvas.height = STRIP_H;
 
-        let capturedPhotos = []; // Holds Image objects
+        // CapturedPhotos now holds OBJECTS with pan/drag offsets
+        let capturedPhotos = []; 
         let currentStripColor = '#ffcccc';
         
-        // Sticker Logic State (Adapted from your logic!)
-        let stickers = [], dragOffset = { x: 0, y: 0 }, selectedSticker = null;
+        // Sticker and Photo Drag Logic State
+        let stickers = [];
+        let dragOffset = { x: 0, y: 0 };
+        let selectedSticker = null;
+        let selectedPhoto = null; // New state to track if we are dragging a photo!
 
         // --- Buttons ---
         const captureLiveBtn = document.getElementById('captureLiveBtn');
@@ -258,7 +313,7 @@
             } catch (err) {
                 console.error("Camera error:", err);
             }
-            drawStripCanvas(); // Draw initial empty strip
+            drawStripCanvas(); 
         }
 
         function drawVideoFrame() {
@@ -282,8 +337,24 @@
                 const y = PADDING + (i * (PHOTO_H + PADDING));
                 
                 if (capturedPhotos[i]) {
-                    // Draw the captured image
-                    sCtx.drawImage(capturedPhotos[i], x, y, PHOTO_W, PHOTO_H);
+                    const cp = capturedPhotos[i];
+                    
+                    sCtx.save(); // Save canvas state
+                    
+                    // Create a "clipping mask" so the photo doesn't draw outside its 640x480 box when moved!
+                    sCtx.beginPath();
+                    sCtx.rect(x, y, PHOTO_W, PHOTO_H);
+                    sCtx.clip();
+
+                    // Draw a white backdrop inside the slot just in case they move the image too far
+                    sCtx.fillStyle = "#ffffff";
+                    sCtx.fillRect(x, y, PHOTO_W, PHOTO_H);
+
+                    // Draw the captured image with its current Drag Offsets
+                    sCtx.drawImage(cp.img, x + cp.offsetX, y + cp.offsetY, cp.drawWidth, cp.drawHeight);
+                    
+                    sCtx.restore(); // Remove clipping mask for the next items
+                    
                 } else {
                     // Draw an empty placeholder box
                     sCtx.fillStyle = "rgba(0,0,0,0.1)";
@@ -310,15 +381,15 @@
 
             // Draw Stickers
             sCtx.textAlign = "left"; 
-            sCtx.textBaseline = "top"; // Top-alignment perfectly matches the bounding box math
-            sCtx.font = "80px Arial"; // Sticker size
+            sCtx.textBaseline = "top"; 
+            sCtx.font = "80px Arial"; 
             
             stickers.forEach(s => {
                 sCtx.fillText(s.emoji, s.x, s.y);
             });
         }
 
-        // 3. STICKER DRAG & DROP LOGIC
+        // 3. STICKER & PHOTO DRAG & DROP LOGIC
         function getPointerPos(e) {
             const rect = stripCanvas.getBoundingClientRect();
             const scaleX = stripCanvas.width / rect.width;
@@ -333,7 +404,8 @@
 
         function pointerDown(e) {
             const { x: mouseX, y: mouseY } = getPointerPos(e);
-            // Loop backwards to grab the top-most sticker first
+            
+            // Step 1: Check if they clicked a Sticker FIRST (stickers are on top)
             for (let i = stickers.length - 1; i >= 0; i--) {
                 const s = stickers[i];
                 if (mouseX >= s.x && mouseX <= s.x + s.width && mouseY >= s.y && mouseY <= s.y + s.height) {
@@ -342,29 +414,59 @@
                     dragOffset.x = mouseX - s.x;
                     dragOffset.y = mouseY - s.y;
                     
-                    // Move to end of array to draw on top
                     stickers.splice(i, 1);
-                    stickers.push(s);
+                    stickers.push(s); // Bring to front
                     
                     drawStripCanvas();
                     e.preventDefault();
-                    break;
+                    return; // Stop looking!
+                }
+            }
+
+            // Step 2: If no sticker was clicked, check if they clicked inside a Photo Box!
+            for (let i = 0; i < capturedPhotos.length; i++) {
+                const slotX = PADDING;
+                const slotY = PADDING + (i * (PHOTO_H + PADDING));
+                
+                // If the mouse is inside this specific photo's frame
+                if (mouseX >= slotX && mouseX <= slotX + PHOTO_W &&
+                    mouseY >= slotY && mouseY <= slotY + PHOTO_H) {
+                    
+                    selectedPhoto = capturedPhotos[i];
+                    selectedPhoto.dragging = true;
+                    
+                    // Remember where they clicked relative to the image's current offset
+                    dragOffset.x = mouseX - selectedPhoto.offsetX;
+                    dragOffset.y = mouseY - selectedPhoto.offsetY;
+                    
+                    e.preventDefault();
+                    return;
                 }
             }
         }
 
         function pointerMove(e) {
-            if (!selectedSticker?.dragging) return;
-            const { x: mouseX, y: mouseY } = getPointerPos(e);
-            selectedSticker.x = mouseX - dragOffset.x;
-            selectedSticker.y = mouseY - dragOffset.y;
-            drawStripCanvas();
-            e.preventDefault();
+            if (selectedSticker?.dragging) {
+                const { x: mouseX, y: mouseY } = getPointerPos(e);
+                selectedSticker.x = mouseX - dragOffset.x;
+                selectedSticker.y = mouseY - dragOffset.y;
+                drawStripCanvas();
+                e.preventDefault();
+            } else if (selectedPhoto?.dragging) {
+                const { x: mouseX, y: mouseY } = getPointerPos(e);
+                // Move the image within its frame!
+                selectedPhoto.offsetX = mouseX - dragOffset.x;
+                selectedPhoto.offsetY = mouseY - dragOffset.y;
+                drawStripCanvas();
+                e.preventDefault();
+            }
         }
 
         function pointerUp() { 
             if (selectedSticker) selectedSticker.dragging = false; 
+            if (selectedPhoto) selectedPhoto.dragging = false;
             selectedSticker = null; 
+            selectedPhoto = null;
         }
 
         // Mouse Events
@@ -383,50 +485,39 @@
         document.querySelectorAll('.sticker-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const emoji = btn.getAttribute('data-sticker');
-                
-                // Add sticker near the middle of the currently visible canvas
                 stickers.push({
                     emoji: emoji,
                     x: Math.random() * 200 + 100,
                     y: Math.random() * 500 + 100,
-                    width: 80, // Approximate width of 80px font emoji
-                    height: 80, // Approximate height
-                    dragging: false
+                    width: 80, height: 80, dragging: false
                 });
                 drawStripCanvas();
             });
         });
 
         document.getElementById('clearStickersBtn').addEventListener('click', () => {
-            stickers = [];
-            drawStripCanvas();
+            stickers = []; drawStripCanvas();
         });
 
         colorPicker.addEventListener('input', (e) => {
-            currentStripColor = e.target.value;
-            drawStripCanvas();
+            currentStripColor = e.target.value; drawStripCanvas();
         });
 
 
-        // 4. PHOTO CAPTURE LOGIC
-        function addPhotoToStrip(dataURL) {
+        // 4. PHOTO CAPTURE & UPLOAD LOGIC
+        function addPhotoToStrip(photoObject) {
             if (capturedPhotos.length >= 5) {
                 alert("Strip full!"); return;
             }
+            capturedPhotos.push(photoObject);
+            drawStripCanvas();
             
-            const img = new Image();
-            img.onload = () => {
-                capturedPhotos.push(img);
-                drawStripCanvas();
-                
-                clearStripBtn.disabled = false;
-                downloadBtn.disabled = false;
-                if (capturedPhotos.length >= 5) {
-                    captureLiveBtn.disabled = true; uploadTriggerBtn.disabled = true;
-                    captureLiveBtn.textContent = "Strip is Full!";
-                }
-            };
-            img.src = dataURL;
+            clearStripBtn.disabled = false;
+            downloadBtn.disabled = false;
+            if (capturedPhotos.length >= 5) {
+                captureLiveBtn.disabled = true; uploadTriggerBtn.disabled = true;
+                captureLiveBtn.textContent = "Strip is Full!";
+            }
         }
 
         function triggerFlash() {
@@ -434,6 +525,7 @@
             setTimeout(() => flashOverlay.style.opacity = '0', 100);
         }
 
+        // Live Camera Capture
         captureLiveBtn.addEventListener('click', () => {
             if (capturedPhotos.length >= 5) return;
             captureLiveBtn.disabled = true; uploadTriggerBtn.disabled = true;
@@ -450,21 +542,47 @@
                     countdownText.style.display = 'none';
                     triggerFlash();
                     
+                    // Create the mirror image
                     const hiddenCanvas = document.createElement('canvas');
                     hiddenCanvas.width = canvas.width; hiddenCanvas.height = canvas.height;
                     const hCtx = hiddenCanvas.getContext('2d');
                     hCtx.translate(hiddenCanvas.width, 0); hCtx.scale(-1, 1);
                     hCtx.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
                     
-                    addPhotoToStrip(hiddenCanvas.toDataURL('image/png'));
+                    const img = new Image();
+                    img.onload = () => {
+                        // Calculate aspect ratio to allow moving it slightly
+                        const imgAspect = img.width / img.height;
+                        const targetAspect = PHOTO_W / PHOTO_H;
+                        let drawWidth, drawHeight;
+                        
+                        if (imgAspect > targetAspect) {
+                            drawHeight = PHOTO_H;
+                            drawWidth = img.width * (PHOTO_H / img.height);
+                        } else {
+                            drawWidth = PHOTO_W;
+                            drawHeight = img.height * (PHOTO_W / img.width);
+                        }
 
-                    if (capturedPhotos.length < 5) {
-                        captureLiveBtn.disabled = false; uploadTriggerBtn.disabled = false;
-                    }
+                        addPhotoToStrip({
+                            img: img,
+                            offsetX: (PHOTO_W - drawWidth) / 2, // Centered by default
+                            offsetY: (PHOTO_H - drawHeight) / 2, // Centered by default
+                            drawWidth: drawWidth,
+                            drawHeight: drawHeight,
+                            dragging: false
+                        });
+                        
+                        if (capturedPhotos.length < 5) {
+                            captureLiveBtn.disabled = false; uploadTriggerBtn.disabled = false;
+                        }
+                    };
+                    img.src = hiddenCanvas.toDataURL('image/png');
                 }
             }, 1000);
         });
 
+        // Photo Upload Logic (Updated for Dragging)
         uploadTriggerBtn.addEventListener('click', () => {
             if (capturedPhotos.length < 5) fileInput.click();
         });
@@ -476,27 +594,28 @@
                 reader.onload = (event) => {
                     const img = new Image();
                     img.onload = () => {
-                        const tempCanvas = document.createElement('canvas');
-                        tempCanvas.width = PHOTO_W; tempCanvas.height = PHOTO_H;
-                        const tCtx = tempCanvas.getContext('2d');
-                        tCtx.fillStyle = '#ffffff'; tCtx.fillRect(0, 0, PHOTO_W, PHOTO_H);
-                        
                         const imgAspect = img.width / img.height;
                         const targetAspect = PHOTO_W / PHOTO_H;
-                        let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
                         
+                        let drawWidth, drawHeight;
+                        
+                        // Scale the image so it completely "covers" the 640x480 box
                         if (imgAspect > targetAspect) {
                             drawHeight = PHOTO_H;
                             drawWidth = img.width * (PHOTO_H / img.height);
-                            offsetX = (PHOTO_W - drawWidth) / 2;
                         } else {
                             drawWidth = PHOTO_W;
                             drawHeight = img.height * (PHOTO_W / img.width);
-                            offsetY = (PHOTO_H - drawHeight) / 2;
                         }
                         
-                        tCtx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-                        addPhotoToStrip(tempCanvas.toDataURL('image/png'));
+                        addPhotoToStrip({
+                            img: img,
+                            offsetX: (PHOTO_W - drawWidth) / 2, // Automatically centers it initially
+                            offsetY: (PHOTO_H - drawHeight) / 2,
+                            drawWidth: drawWidth,
+                            drawHeight: drawHeight,
+                            dragging: false
+                        });
                     };
                     img.src = event.target.result;
                 };
@@ -511,14 +630,14 @@
             drawStripCanvas();
             clearStripBtn.disabled = true; downloadBtn.disabled = true;
             captureLiveBtn.disabled = false; uploadTriggerBtn.disabled = false;
-            captureLiveBtn.textContent = "📸 Start Live Camera";
+            captureLiveBtn.textContent = "📸 Start Camera";
         });
 
         downloadBtn.addEventListener('click', () => {
             if (capturedPhotos.length === 0) return;
             const link = document.createElement('a');
             link.download = 'birthday-strip.png';
-            link.href = stripCanvas.toDataURL('image/png'); // Super easy download now!
+            link.href = stripCanvas.toDataURL('image/png');
             link.click();
         });
 
